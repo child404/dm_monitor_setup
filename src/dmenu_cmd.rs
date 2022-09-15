@@ -1,19 +1,22 @@
+use crate::config::Config;
 use std::process::{Command, Stdio};
 use std::str;
 
 pub struct DmenuCmd {
-    pub bin: String,
-    pub params: Vec<String>,
-    pub options: Vec<String>,
+    pub executable: String,
+    pub args: Vec<String>,
+    pub prompt_options: Vec<String>,
     pub prompt_message: String,
 }
 
+pub struct Defaults;
+
 impl DmenuCmd {
-    pub fn new(options: Vec<String>, prompt_message: String) -> Self {
+    pub fn new(prompt_options: Vec<String>, prompt_message: String) -> Self {
         DmenuCmd {
-            bin: "dmenu".to_string(),
-            params: vec!["-c".to_string(), "-l 5".to_string(), "-bw 1".to_string()],
-            options,
+            executable: Config::dmenu_executable(),
+            args: Config::dmenu_args(),
+            prompt_options,
             prompt_message,
         }
     }
@@ -21,9 +24,9 @@ impl DmenuCmd {
     pub fn exec(&self) -> String {
         let command = format!(
             "printf \"{}\" | {} {} -p \"{}\"",
-            self.options.join("\n"),
-            self.bin,
-            self.params.join(" "),
+            self.prompt_options.join("\n"),
+            self.executable,
+            self.args.join(" "),
             self.prompt_message
         );
         let child = Command::new("bash")
@@ -38,5 +41,19 @@ impl DmenuCmd {
                 .expect("invalid utf8 sequence")
                 .trim(),
         )
+    }
+}
+
+impl Defaults {
+    pub fn exec_confirmation() -> String {
+        DmenuCmd::new(
+            vec!["No".to_string(), "Yes".to_string()],
+            "Confirm? ".to_string(),
+        )
+        .exec()
+    }
+
+    pub fn exec_no_layouts_found() {
+        DmenuCmd::new(vec![], "No layouts found".to_string()).exec();
     }
 }

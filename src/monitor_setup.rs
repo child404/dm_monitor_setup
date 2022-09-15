@@ -1,112 +1,145 @@
 #![allow(unused_imports, unused_variables, dead_code)]
+use crate::config::Config;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::fs;
 use std::io::Write as IoWrite;
+use std::process::Command;
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct MonitorSetups {
-    pub setup: Vec<MonitorSetup>,
+pub struct MonitorLayouts {
+    pub layouts: Vec<MonitorLayout>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct MonitorSetup {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct MonitorLayout {
     pub name: String,
     pub monitors: Vec<Monitor>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Monitor {
     pub name: String,
     pub height_px: u16,
     pub width_px: u16,
     pub rate: u8,
     pub is_primary: bool,
+    pub is_auto: bool,
     pub pos: MonitorPosition,
     pub dupl: MonitorDuplicated,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct MonitorPosition {
     pub is_related: bool,
     pub related_pos: String,
     pub related_name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct MonitorDuplicated {
     pub is_duplicated: bool,
     pub name: String,
 }
 
-impl MonitorSetups {
+impl MonitorLayouts {
     pub fn from_config() -> Self {
-        let path_to_config = "/home/child404/.config/dm_monitor_setup/monitor_setups.toml";
-        let toml_string =
-            fs::read_to_string(path_to_config).expect("Should have been able to read the file");
-        let setups: MonitorSetups =
-            toml::from_str(&toml_string).expect("Correct monitor_setups.toml structure");
-        setups
+        let layouts_toml = fs::read_to_string(Config::path_to_config())
+            .expect("Should have been able to read the file");
+        toml::from_str(&layouts_toml).expect("Correct monitor_setups.toml structure")
     }
 
-    pub fn get_setup_by(&self, name: String) -> Result<MonitorSetup, ()> {
-        for setup in &self.setup {
-            if setup.name == name {
-                return Ok(setup);
+    pub fn add_to_config(&self) {
+        // TODO: add here check for existing layout namesself) {
+        // TODO: restructure it to check/add one by one
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open(Config::path_to_config())
+            .unwrap();
+        file.write_all(self._to_toml().as_bytes())
+            .expect("MonitorLayouts written to a file");
+    }
+
+    fn _overwrite_config(&self) {
+        // TODO: rewrite to not duplicate code in add_to_config():
+        //       add to Config
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(Config::path_to_config())
+            .unwrap();
+        file.write_all(self._to_toml().as_bytes())
+            .expect("MonitorLayouts written to a file");
+    }
+
+    fn _to_toml(&self) -> String {
+        toml::to_string(&self).expect("Convert MonitorSetups to toml")
+    }
+
+    pub fn names(&self) -> Vec<String> {
+        self.layouts
+            .iter()
+            .map(|monitor_setup| monitor_setup.name.clone())
+            .collect::<Vec<String>>()
+    }
+
+    pub fn get_layout_by(&self, name: String) -> Result<MonitorLayout, ()> {
+        for layout in self.layouts.iter() {
+            if layout.name == name {
+                return Ok(layout.clone());
             }
         }
         Err(())
     }
 
-    pub fn to_toml(&self) {
-        let path_to_config = "/home/child404/.config/dm_monitor_setup/monitor_setups.toml";
-        let toml_string: String = toml::to_string(&self).expect("Convert MonitorSetups to toml");
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .append(true)
-            .open(&path_to_config)
-            .unwrap();
-        file.write_all(toml_string.as_bytes())
-            .expect("MonitorSetups written to a file");
+    pub fn remove_layout(&mut self, name: String) {
+        if let Some(pos) = self.layouts.iter().position(|layout| *layout.name == name) {
+            self.layouts.remove(pos);
+        }
+        self._overwrite_config();
     }
 
-    pub fn names(&self) -> Vec<String> {
-        self.setup
-            .iter()
-            .map(|monitor_setup| monitor_setup.name.clone())
-            .collect::<Vec<String>>()
+    pub fn is_empty(&self) -> bool {
+        self.layouts.is_empty()
     }
 }
 
-impl MonitorSetup {
-    pub fn from_config(setup_name: &str) -> Self {
-        unimplemented!()
-    }
-
-    pub fn add_to_config(&self) {
-        let path_to_config = "$HOME/.config/dm_monitor_setup/monitor_setups.toml";
-        unimplemented!()
-    }
-
+impl MonitorLayout {
     pub fn to_xrandr_command(&self) -> String {
         let mut command = String::from("xrandr");
         for monitor in self.monitors.iter() {
-            command += &monitor.to_xrandr_output();
+            write!(&mut command, " {}", &monitor.to_xrandr_output()).unwrap();
         }
+        println!("{:?}", &command);
         command
+    }
+
+    pub fn add_to_config(&self) {
+        MonitorLayouts {
+            layouts: vec![self.clone()],
+        }
+        .add_to_config();
+    }
+
+    pub fn apply(&self) {
+        Command::new("bash")
+            .arg("-c")
+            .arg(self.to_xrandr_command())
+            .spawn()
+            .expect("xrandr successfully applied layout");
     }
 }
 
 impl Monitor {
-    pub fn from_string(xrandr_output: String) -> Self {
-        unimplemented!()
-    }
-
     pub fn to_xrandr_output(&self) -> String {
         let mut output = format!(
             "--output {} --mode {}x{} --rate {}",
             self.name, self.height_px, self.width_px, self.rate
         );
+        if self.is_auto {
+            output += " --auto";
+        }
         if self.pos.is_related {
             write!(
                 &mut output,

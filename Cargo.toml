@@ -1,5 +1,5 @@
 [package]
-name = "dm_monitor_setup"
+name = "dmenu_ms"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,3 +12,4 @@ xrandr = "0.1.1"
 toml = "0.5.9"
 serde_derive = "1.0.144"
 serde = "1.0.144"
+dirs = "4.0.0"
