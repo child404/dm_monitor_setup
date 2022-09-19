@@ -1,5 +1,6 @@
 #![allow(unused_imports, unused_variables)]
 use crate::dmenu_interface::dmenu_ms::{launch_ms, run_daemon, spawn_help};
+// TODO: rewrite modules use the latest replacement for mod.rs
 
 pub mod cmd;
 pub mod custom_errors;

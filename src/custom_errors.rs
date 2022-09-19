@@ -7,6 +7,11 @@ pub enum LayoutError {
     InternalServerError,
 }
 
+#[derive(Debug)]
+pub enum TermOutputError {
+    EmptyString,
+}
+
 impl fmt::Display for LayoutError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -21,6 +26,22 @@ impl StdError for LayoutError {
         match *self {
             LayoutError::LayoutNotFound => "Layout not found",
             LayoutError::InternalServerError => "Internal Server Error",
+        }
+    }
+}
+
+impl fmt::Display for TermOutputError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            TermOutputError::EmptyString => f.write_str("EmptyString"),
+        }
+    }
+}
+
+impl StdError for TermOutputError {
+    fn description(&self) -> &str {
+        match *self {
+            TermOutputError::EmptyString => "Empty String",
         }
     }
 }

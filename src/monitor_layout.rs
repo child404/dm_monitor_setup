@@ -4,7 +4,8 @@ use crate::custom_errors::LayoutError;
 use crate::layouts_config::LayoutsConfig;
 use crate::params::Params;
 use serde_derive::{Deserialize, Serialize};
-use std::io::Write;
+use std::fmt::Write;
+use std::io::Write as IoWrite;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MonitorLayouts {
@@ -22,7 +23,7 @@ pub struct Monitor {
     pub name: String,
     pub height_px: u16,
     pub width_px: u16,
-    pub rate: u8,
+    pub rate: f32,
     pub is_primary: bool,
     pub is_auto: bool,
     pub pos: MonitorPosition,
@@ -40,6 +41,40 @@ pub struct MonitorPosition {
 pub struct MonitorDuplicated {
     pub is_duplicated: bool,
     pub name: String,
+}
+
+impl MonitorPosition {
+    pub fn not_related() -> Self {
+        Self {
+            is_related: false,
+            related_pos: "".to_string(),
+            related_name: "".to_string(),
+        }
+    }
+
+    pub fn related(related_pos: &str, related_name: &str) -> Self {
+        Self {
+            is_related: true,
+            related_pos: related_pos.to_string(),
+            related_name: related_name.to_string(),
+        }
+    }
+}
+
+impl MonitorDuplicated {
+    pub fn not_duplicated() -> Self {
+        Self {
+            is_duplicated: false,
+            name: "".to_string(),
+        }
+    }
+
+    pub fn duplicated(name: &str) -> Self {
+        Self {
+            is_duplicated: true,
+            name: name.to_string(),
+        }
+    }
 }
 
 impl MonitorLayouts {
@@ -93,13 +128,50 @@ impl MonitorLayout {
     }
 }
 
+impl ToString for MonitorLayout {
+    fn to_string(&self) -> String {
+        self.monitors
+            .iter()
+            .map(|monitor| monitor.to_string())
+            .collect::<Vec<String>>()
+            .join(" ")
+    }
+}
+
+impl ToString for Monitor {
+    fn to_string(&self) -> String {
+        let mut output = format!(
+            "--output {} --mode {}x{} --rate {}",
+            self.name, self.height_px, self.width_px, self.rate
+        );
+        if self.is_auto {
+            output += " --auto";
+        }
+        if self.pos.is_related {
+            write!(
+                &mut output,
+                " --{} {}",
+                self.pos.related_pos, self.pos.related_name
+            )
+            .unwrap();
+        }
+        if self.dupl.is_duplicated {
+            write!(&mut output, " --same-as {}", self.dupl.name).unwrap();
+        }
+        if self.is_primary {
+            output += " --primary";
+        }
+        output
+    }
+}
+
 #[test]
 fn test_monitor_setup() {
     let monitor = Monitor {
         name: "eDP-1".to_string(),
         height_px: 1920,
         width_px: 1200,
-        rate: 120,
+        rate: 120.0,
         is_primary: true,
         is_auto: true,
         pos: MonitorPosition {

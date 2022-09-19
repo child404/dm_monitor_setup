@@ -1,7 +1,7 @@
 use crate::cmd::term;
-use crate::custom_errors::LayoutError;
+use crate::custom_errors::{LayoutError, TermOutputError};
 use crate::params::Params;
-use std::process::exit;
+use std::process;
 use std::str;
 
 pub struct DmenuCmd {
@@ -24,18 +24,23 @@ impl DmenuCmd {
     }
 
     pub fn exec(&self) -> String {
-        let result = term::exec_with_output(&format!(
+        if let Ok(output) = term::exec_with_output(&self.to_string()) {
+            return output;
+        }
+        // handle Esc or ^[ to quit the dmenu
+        process::exit(0);
+    }
+}
+
+impl ToString for DmenuCmd {
+    fn to_string(&self) -> String {
+        format!(
             "printf \"{}\" | {} {} -p \"{}\"",
             self.prompt_options.join("\n"),
             self.executable,
             self.args.join(" "),
             self.prompt_message
-        ));
-        if result.is_empty() {
-            // handle Esc or ^[ to quit the program
-            exit(0);
-        }
-        result
+        )
     }
 }
 
