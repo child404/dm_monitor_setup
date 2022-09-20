@@ -15,6 +15,15 @@ impl Params {
         }
     }
 
+    pub fn monitor_positions() -> Vec<String> {
+        vec![
+            "left-of".to_string(),
+            "right-of".to_string(),
+            "above".to_string(),
+            "below".to_string(),
+        ]
+    }
+
     pub fn dmenu_executable() -> String {
         String::from("dmenu")
     }

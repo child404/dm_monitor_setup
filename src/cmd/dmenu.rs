@@ -11,7 +11,7 @@ pub struct DmenuCmd {
     pub prompt_message: String,
 }
 
-pub struct Defaults;
+pub struct DmenuDefaults;
 
 impl DmenuCmd {
     pub fn new(prompt_options: &[String], prompt_message: String) -> Self {
@@ -44,13 +44,13 @@ impl ToString for DmenuCmd {
     }
 }
 
-impl Defaults {
+impl DmenuDefaults {
     pub fn exec_confirm() -> String {
-        Defaults::exec_with_yes_no("Confirm? ")
+        DmenuDefaults::exec_with_yes_no("Confirm? ")
     }
 
     pub fn exec_inherit_layout() -> String {
-        Defaults::exec_with_yes_no("Inherit existing layout? ")
+        DmenuDefaults::exec_with_yes_no("Inherit existing layout? ")
     }
 
     fn exec_with_yes_no(prompt_message: &str) -> String {
@@ -61,20 +61,43 @@ impl Defaults {
         .exec()
     }
 
-    pub fn confirmed() -> bool {
-        Defaults::exec_confirm() == "Yes"
+    pub fn exec_continue() -> bool {
+        DmenuDefaults::exec_with_yes_no("Continue? ") == "Yes"
     }
 
-    fn exec_with_goback(msg: &str, default_opts: &[String]) {
-        DmenuCmd::new(
-            &[default_opts, &["← Go back".to_string()]].concat(),
-            msg.to_string(),
+    pub fn confirmed() -> bool {
+        DmenuDefaults::exec_confirm() == "Yes"
+    }
+
+    pub fn exec_is_primary() -> bool {
+        DmenuDefaults::exec_with_yes_no("Is primary monitor? ") == "Yes"
+    }
+
+    fn exec_with_skip(msg: &str, default_opts: Option<&[String]>) -> String {
+        let mut opts = vec!["Skip".to_string()];
+        if let Some(def_opts) = default_opts {
+            opts = [def_opts, &opts].concat();
+        }
+        DmenuCmd::new(&opts, msg.to_string()).exec()
+    }
+
+    pub fn exec_position(monitor_name: &str) -> String {
+        DmenuDefaults::exec_with_skip(
+            &format!("Where to place the monitor {}? ", monitor_name),
+            Some(&Params::monitor_positions()),
         )
-        .exec();
+    }
+
+    fn exec_with_goback(msg: &str, default_opts: Option<&[String]>) {
+        let mut opts = vec!["← Go back".to_string()];
+        if let Some(def_opts) = default_opts {
+            opts = [def_opts, &opts].concat();
+        }
+        DmenuCmd::new(&opts, msg.to_string()).exec();
     }
 
     pub fn exec_no_layouts_found() {
-        Defaults::exec_with_goback("No layouts found ", &[]);
+        DmenuDefaults::exec_with_goback("No layouts found ", None);
     }
 
     pub fn exec_layout_to_remove(options: &[String]) -> String {
@@ -82,7 +105,7 @@ impl Defaults {
     }
 
     pub fn exec_err(err: LayoutError, err_msg: &str) {
-        Defaults::exec_with_goback(&format!("{}: {}", err, err_msg), &[]);
+        DmenuDefaults::exec_with_goback(&format!("{}: {}", err, err_msg), None);
     }
 
     pub fn exec_start(layout_names: &[String]) -> String {

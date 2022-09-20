@@ -1,2 +1,3 @@
 pub mod dmenu_ms;
-pub mod layout_manager;
+mod layout_creator;
+mod layout_manager;

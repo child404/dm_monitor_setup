@@ -1,18 +1,30 @@
 #![allow(unused_imports, unused_variables, dead_code)]
 use crate::cmd::{term, xrandr};
-use crate::custom_errors::LayoutError;
+use crate::custom_errors::{LayoutError, MonitorError};
 use crate::layouts_config::LayoutsConfig;
 use crate::params::Params;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::io::Write as IoWrite;
+use std::str::FromStr;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default)]
+pub struct MonitorSettings {
+    pub resolutions: Vec<String>,
+    pub rates: Vec<String>,
+}
+
+pub struct Resolution {
+    height_px: u16,
+    width_px: u16,
+}
+
+#[derive(Debug, Deserialize, Serialize, Default)]
 pub struct MonitorLayouts {
     pub layouts: Vec<MonitorLayout>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct MonitorLayout {
     pub name: String,
     pub monitors: Vec<Monitor>,
@@ -30,28 +42,45 @@ pub struct Monitor {
     pub dupl: MonitorDuplicated,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct MonitorPosition {
     pub is_related: bool,
     pub related_pos: String,
     pub related_name: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct MonitorDuplicated {
     pub is_duplicated: bool,
     pub name: String,
 }
 
-impl MonitorPosition {
-    pub fn not_related() -> Self {
-        Self {
-            is_related: false,
-            related_pos: "".to_string(),
-            related_name: "".to_string(),
+impl FromStr for Resolution {
+    fn from_str(res: &str) -> Result<Self, Self::Err> {
+        if let [height_px, width_px] = res
+            .split('x')
+            .take(2)
+            .flat_map(|res_px| res_px.parse::<u16>())
+            .collect::<Vec<u16>>()[..]
+        {
+            return Ok(Self {
+                height_px,
+                width_px,
+            });
         }
+        Err(Self::Err::InvalidResolution)
     }
 
+    type Err = MonitorError;
+}
+
+impl ToString for Resolution {
+    fn to_string(&self) -> String {
+        format!("{}x{}", self.height_px, self.width_px)
+    }
+}
+
+impl MonitorPosition {
     pub fn related(related_pos: &str, related_name: &str) -> Self {
         Self {
             is_related: true,
@@ -62,13 +91,6 @@ impl MonitorPosition {
 }
 
 impl MonitorDuplicated {
-    pub fn not_duplicated() -> Self {
-        Self {
-            is_duplicated: false,
-            name: "".to_string(),
-        }
-    }
-
     pub fn duplicated(name: &str) -> Self {
         Self {
             is_duplicated: true,
@@ -79,10 +101,17 @@ impl MonitorDuplicated {
 
 impl MonitorLayouts {
     pub fn from_config() -> Self {
-        toml::from_str(&LayoutsConfig::read()).expect("Correct monitor_setups.toml structure")
+        let content = LayoutsConfig::read();
+        if content.is_empty() {
+            return Self::default();
+        }
+        toml::from_str(&content).expect("Correct monitor_setups.toml structure")
     }
 
     pub fn as_toml(&self) -> String {
+        if self.layouts.is_empty() {
+            return String::new();
+        }
         toml::to_string(&self).expect("Convert MonitorLayouts to toml")
     }
 
@@ -125,6 +154,13 @@ impl MonitorLayout {
     pub fn apply(&self) {
         // TODO: send here current layout to daemon or save to file
         term::exec(&xrandr::from_monitor_layout(self));
+    }
+
+    pub fn monitor_names(&self) -> Vec<String> {
+        self.monitors
+            .iter()
+            .map(|monitor_setup| monitor_setup.name.clone())
+            .collect::<Vec<String>>()
     }
 }
 

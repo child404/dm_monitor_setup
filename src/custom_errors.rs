@@ -8,6 +8,11 @@ pub enum LayoutError {
 }
 
 #[derive(Debug)]
+pub enum MonitorError {
+    InvalidResolution,
+}
+
+#[derive(Debug)]
 pub enum TermOutputError {
     EmptyString,
 }
@@ -42,6 +47,22 @@ impl StdError for TermOutputError {
     fn description(&self) -> &str {
         match *self {
             TermOutputError::EmptyString => "Empty String",
+        }
+    }
+}
+
+impl fmt::Display for MonitorError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            MonitorError::InvalidResolution => f.write_str("InvalidResolution"),
+        }
+    }
+}
+
+impl StdError for MonitorError {
+    fn description(&self) -> &str {
+        match *self {
+            TermOutputError::EmptyString => "Invalid Resolution",
         }
     }
 }

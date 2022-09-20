@@ -2,8 +2,8 @@
 use std::process::exit;
 use std::{thread, time};
 
-use crate::cmd::dmenu::Defaults;
-use crate::dmenu_interface::layout_manager;
+use super::layout_manager;
+use crate::cmd::dmenu::DmenuDefaults;
 use crate::layouts_config::LayoutsConfig;
 use crate::monitor_layout::MonitorLayouts;
 use crate::params::Params;
@@ -19,7 +19,7 @@ pub fn run_daemon() {
 pub fn launch_ms() {
     // TODO: add current layout and add layout_name (Current) or ✓
     let mut user_layouts = MonitorLayouts::from_config();
-    match Defaults::exec_start(&user_layouts.names()).as_str() {
+    match DmenuDefaults::exec_start(&user_layouts.names()).as_str() {
         "Auto-detect" => layout_manager::auto_detect_layout(),
         "Disconnect all" => layout_manager::disconnect_all_monitors(),
         "Create new layout" => layout_manager::create_new_layout(&user_layouts),
