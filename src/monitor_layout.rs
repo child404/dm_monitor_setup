@@ -61,9 +61,9 @@ pub struct MonitorDuplicated {
     pub name: String,
 }
 
-fn unique_and_sort(v: &Vec<String>) -> Vec<String> {
+fn unique_and_sort(v: &mut [String]) -> Vec<String> {
     v.sort(); // TODO: maybe remove that
-    v.iter().unique().map(|x| *x).collect()
+    v.iter().unique().map(|x| x.to_string()).collect()
 }
 
 impl ScreenOptions {
@@ -72,8 +72,8 @@ impl ScreenOptions {
     }
 
     fn remove_duplicates(&mut self) {
-        self.resolutions = unique_and_sort(&self.resolutions);
-        self.rates = unique_and_sort(&self.rates);
+        self.resolutions = unique_and_sort(&mut self.resolutions);
+        self.rates = unique_and_sort(&mut self.rates);
     }
 
     fn add(&mut self, res: String, rate: String) {
@@ -84,9 +84,11 @@ impl ScreenOptions {
 
 impl FromStr for ScreenOptions {
     fn from_str(screen_settings: &str) -> Result<Self, Self::Err> {
-        let screen_settings_regexp = Regex::new(r"(\d+x\d+) (\d+\.\d+)\n").unwrap();
         let mut screen_opts = Self::default();
-        for setting in screen_settings_regexp.captures_iter(screen_settings) {
+        for setting in Regex::new(r"(\d+x\d+) (\d+\.\d+)\n")
+            .unwrap()
+            .captures_iter(screen_settings)
+        {
             // ScreenRes's and ScreenRate's values can be safely unwrapped as we already matched
             // the proper structure of the resolution and rate by the regex
             screen_opts.add(setting[1].to_string(), setting[2].to_string());
@@ -237,7 +239,7 @@ impl ToString for Monitor {
     fn to_string(&self) -> String {
         let mut output = format!(
             "--output {} --mode {}x{} --rate {}",
-            self.name, self.height_px, self.width_px, self.rate
+            self.name, self.res.0, self.res.1, self.rate.0
         );
         if self.is_auto {
             output += " --auto";
@@ -264,8 +266,8 @@ impl ToString for Monitor {
 fn test_monitor_setup() {
     let monitor = Monitor {
         name: "eDP-1".to_string(),
-        res: ScreenRes::from_str("1920x1200")?,
-        rate: ScreenRate::from_str("120.0")?,
+        res: ScreenRes::from_str("1920x1200").ok().unwrap(),
+        rate: ScreenRate::from_str("120.0").ok().unwrap(),
         is_primary: true,
         is_auto: true,
         pos: MonitorPosition {

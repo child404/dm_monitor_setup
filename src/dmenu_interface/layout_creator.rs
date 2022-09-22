@@ -1,11 +1,15 @@
-use crate::cmd::{
-    dmenu::{DmenuCmd, DmenuDefaults},
-    xrandr::XrandrCmd,
+use crate::{
+    cmd::{
+        dmenu::{DmenuCmd, DmenuDefaults},
+        xrandr::XrandrCmd,
+    },
+    layouts_config::LayoutsConfig,
+    monitor_layout::{
+        Monitor, MonitorDuplicated, MonitorLayout, MonitorLayouts, MonitorPosition, ScreenRate,
+        ScreenRes,
+    },
 };
-use crate::layouts_config::LayoutsConfig;
-use crate::monitor_layout::{
-    Monitor, MonitorDuplicated, MonitorLayout, MonitorLayouts, MonitorPosition,
-};
+use std::str::FromStr;
 
 #[derive(Default)]
 pub struct LayoutCreator {
@@ -32,14 +36,14 @@ impl LayoutCreator {
             )
             .exec();
 
-            let selected_monitor = &screen_to_opts[&selected_monitor_name];
+            let selected_opts = &screen_to_opts[&selected_monitor_name];
             let selected_res = DmenuCmd::new(
-                &selected_monitor.resolutions(),
+                &selected_opts.resolutions,
                 format!("Which resolution for {}? ", selected_monitor_name),
             )
             .exec();
             let selected_rate = DmenuCmd::new(
-                &selected_monitor.rates(),
+                &selected_opts.rates,
                 format!("Which rate for {}? ", selected_monitor_name),
             )
             .exec();
@@ -70,11 +74,8 @@ impl LayoutCreator {
             {
                 self.final_layout.monitors.push(Monitor {
                     name: selected_monitor_name,
-                    rate: selected_rate
-                        .parse::<f32>()
-                        .unwrap_or_else(|_| panic!("Parsed monitor rate {}", &selected_rate)),
-                    height_px: *height_px,
-                    width_px: *width_px,
+                    rate: ScreenRate::from_str(&selected_rate).ok().unwrap(),
+                    res: ScreenRes::from_str(&selected_res).ok().unwrap(),
                     pos: monitor_position,
                     is_auto: true,
                     is_primary: false,
@@ -83,11 +84,11 @@ impl LayoutCreator {
             }
             is_continue = DmenuDefaults::exec_continue();
         }
-        monitor_layout.name =
+        self.final_layout.name =
             DmenuCmd::new(&[], String::from("Choose the name for your layout: ")).exec();
 
         LayoutsConfig::add(MonitorLayouts {
-            layouts: vec![monitor_layout],
+            layouts: vec![self.final_layout.clone()],
         });
     }
 
