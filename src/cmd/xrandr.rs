@@ -1,20 +1,49 @@
-use crate::cmd::term;
-use crate::monitor_layout::{Monitor, MonitorLayout};
+use regex::Regex;
+use std::{collections::HashMap, str::FromStr};
 
-pub fn from_monitor_layout(monitor_layout: &MonitorLayout) -> String {
-    format!("xrandr {}", monitor_layout.to_string())
-}
+use crate::cmd::term::TermCmd;
+use crate::monitor_layout::{MonitorLayout, ScreenOptions, ScreenRate, ScreenRes};
 
-pub fn get_list_of_monitors() -> String {
-    match term::exec_with_output("xrandr | grep \" connected\"") {
-        Ok(output) => output,
-        Err(err) => "".to_string(),
+pub struct XrandrCmd;
+
+impl XrandrCmd {
+    pub fn from_monitor_layout(layout: &MonitorLayout) -> String {
+        format!("xrandr {}", layout.to_string())
     }
-}
 
-pub fn get_displays() -> String {
-    match term::exec_with_output("xrandr | grep -Ev \"disconnected|Screen\" | awk '{print $1, $2}' | awk -F'[/+* ]' '{print $1\" \"$2}'") {
-        Ok(output) => output,
-        Err(err) => "".to_string()
+    pub fn get_list_of_monitors() -> Option<Vec<String>> {
+        match TermCmd::exec_with_output("xrandr | grep \" connected\"") {
+            Ok(output) => Some(
+                output
+                    .split('\n')
+                    .flat_map(|line| {
+                        line.split_whitespace()
+                            .take(1)
+                            .next()
+                            .map(|screen| screen.to_string())
+                    })
+                    .collect(),
+            ),
+            Err(err) => None,
+        }
+    }
+
+    fn _get_display_options() -> Option<String> {
+        TermCmd::exec_with_output(
+            "xrandr | grep -Ev \"disconnected|Screen\" | awk '{print $1, $2}' | awk -F'[/+* ]' '{print $1\" \"$2}'").ok()
+    }
+
+    pub fn get_display_options() -> Option<HashMap<String, ScreenOptions>> {
+        let screens_regexp =
+            Regex::new(r"(.+) connected\n(?:[\da-zA-Z]+x[\da-zA-Z]+ [\da-zA-Z]+\.[\da-zA-Z]+\n)+")
+                .unwrap();
+        Self::_get_display_options().map(|opts| {
+            HashMap::from_iter(screens_regexp.captures_iter(&opts).map(|screen| {
+                (
+                    screen[1].to_string(),
+                    ScreenOptions::from_str(&screen[0]).ok().unwrap(),
+                )
+            }))
+        })
     }
 }

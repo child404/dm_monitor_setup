@@ -1,4 +1,4 @@
-use crate::cmd::term;
+use crate::cmd::term::TermCmd;
 use crate::custom_errors::{LayoutError, TermOutputError};
 use crate::params::Params;
 use std::process;
@@ -24,7 +24,7 @@ impl DmenuCmd {
     }
 
     pub fn exec(&self) -> String {
-        if let Ok(output) = term::exec_with_output(&self.to_string()) {
+        if let Ok(output) = TermCmd::exec_with_output(&self.to_string()) {
             return output;
         }
         // handle Esc or ^[ to quit the dmenu

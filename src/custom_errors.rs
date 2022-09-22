@@ -8,8 +8,9 @@ pub enum LayoutError {
 }
 
 #[derive(Debug)]
-pub enum MonitorError {
-    InvalidResolution,
+pub enum ScreenError {
+    InvalidScreenResolution,
+    InvalidScreenRate,
 }
 
 #[derive(Debug)]
@@ -51,18 +52,20 @@ impl StdError for TermOutputError {
     }
 }
 
-impl fmt::Display for MonitorError {
+impl fmt::Display for ScreenError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            MonitorError::InvalidResolution => f.write_str("InvalidResolution"),
+            ScreenError::InvalidScreenResolution => f.write_str("InvalidResolution"),
+            ScreenError::InvalidScreenRate => f.write_str("InvalidScreenRate"),
         }
     }
 }
 
-impl StdError for MonitorError {
+impl StdError for ScreenError {
     fn description(&self) -> &str {
         match *self {
-            TermOutputError::EmptyString => "Invalid Resolution",
+            ScreenError::InvalidScreenResolution => "Invalid Resolution",
+            ScreenError::InvalidScreenRate => "Invalid Screen Rate",
         }
     }
 }
