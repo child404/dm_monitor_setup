@@ -1,4 +1,3 @@
-#![allow(unused_imports, unused_variables)]
 use crate::dmenu_interface::dmenu_ms::{launch_ms, run_daemon, spawn_help};
 // TODO: rewrite modules use the latest replacement for mod.rs
 
@@ -8,8 +7,8 @@ pub mod dmenu_interface;
 pub mod layouts_config;
 pub mod monitor_layout;
 pub mod params;
+pub mod screen_opts;
 use std::env;
-use std::str;
 
 fn main() {
     match env::args().nth(1) {

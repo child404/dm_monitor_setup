@@ -4,12 +4,8 @@ use crate::{
         xrandr::XrandrCmd,
     },
     layouts_config::LayoutsConfig,
-    monitor_layout::{
-        Monitor, MonitorDuplicated, MonitorLayout, MonitorLayouts, MonitorPosition, ScreenRate,
-        ScreenRes,
-    },
+    monitor_layout::{Monitor, MonitorDuplicated, MonitorLayout, MonitorLayouts, MonitorPosition},
 };
-use std::str::FromStr;
 
 #[derive(Default)]
 pub struct LayoutCreator {
@@ -38,12 +34,12 @@ impl LayoutCreator {
 
             let selected_opts = &screen_to_opts[&selected_monitor_name];
             let selected_res = DmenuCmd::new(
-                &selected_opts.resolutions,
+                &selected_opts.resolutions(),
                 format!("Which resolution for {}? ", selected_monitor_name),
             )
             .exec();
             let selected_rate = DmenuCmd::new(
-                &selected_opts.rates,
+                &selected_opts.rates(),
                 format!("Which rate for {}? ", selected_monitor_name),
             )
             .exec();
@@ -74,8 +70,8 @@ impl LayoutCreator {
             {
                 self.final_layout.monitors.push(Monitor {
                     name: selected_monitor_name,
-                    rate: ScreenRate::from_str(&selected_rate).ok().unwrap(),
-                    res: ScreenRes::from_str(&selected_res).ok().unwrap(),
+                    res: selected_res.parse().ok().unwrap(),
+                    rate: selected_rate.parse().ok().unwrap(),
                     pos: monitor_position,
                     is_auto: true,
                     is_primary: false,
@@ -91,6 +87,4 @@ impl LayoutCreator {
             layouts: vec![self.final_layout.clone()],
         });
     }
-
-    pub fn remove_layout(&self) {}
 }

@@ -1,5 +1,5 @@
 use crate::cmd::term::TermCmd;
-use crate::custom_errors::{LayoutError, TermOutputError};
+use crate::custom_errors::LayoutError;
 use crate::params::Params;
 use std::process;
 use std::str;

@@ -1,8 +1,7 @@
 use regex::Regex;
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
-use crate::cmd::term::TermCmd;
-use crate::monitor_layout::{MonitorLayout, ScreenOptions, ScreenRate, ScreenRes};
+use crate::{cmd::term::TermCmd, monitor_layout::MonitorLayout, screen_opts::ScreenOptions};
 
 pub struct XrandrCmd;
 
@@ -38,12 +37,11 @@ impl XrandrCmd {
             Regex::new(r"(.+) connected\n(?:[\da-zA-Z]+x[\da-zA-Z]+ [\da-zA-Z]+\.[\da-zA-Z]+\n)+")
                 .unwrap();
         Self::_get_display_options().map(|opts| {
-            HashMap::from_iter(screens_regexp.captures_iter(&opts).map(|screen| {
-                (
-                    screen[1].to_string(),
-                    ScreenOptions::from_str(&screen[0]).ok().unwrap(),
-                )
-            }))
+            HashMap::from_iter(
+                screens_regexp
+                    .captures_iter(&opts)
+                    .map(|screen| (screen[1].to_string(), screen[0].parse().ok().unwrap())),
+            )
         })
     }
 }

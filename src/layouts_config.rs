@@ -1,4 +1,4 @@
-use crate::monitor_layout::{MonitorLayout, MonitorLayouts};
+use crate::monitor_layout::MonitorLayouts;
 use crate::params::Params;
 use std::fs;
 use std::io::Write;
