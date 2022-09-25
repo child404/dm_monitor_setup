@@ -10,16 +10,16 @@ use std::{
 
 use crate::custom_errors::ScreenError;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ScreenOptions {
     pub resolutions: Vec<ScreenRes>,
     pub rates: Vec<ScreenRate>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, Copy)]
+#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, Copy, Default)]
 pub struct ScreenRes(pub u16, pub u16);
 
-#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, Copy)]
+#[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, Copy, Default)]
 pub struct ScreenRate(pub u16);
 
 fn filter_unique<T: Hash + Ord + Copy>(v: &mut [T]) -> Vec<T> {
@@ -50,7 +50,6 @@ impl ScreenOptions {
     }
 
     fn add(&mut self, res: ScreenRes, rate: ScreenRate) {
-        // FIXME: change res and rate to structs types and sort descending
         self.resolutions.push(res);
         self.rates.push(rate);
     }
@@ -91,18 +90,6 @@ impl Ord for ScreenRes {
     }
 }
 
-impl PartialOrd for ScreenRate {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for ScreenRate {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
 impl FromStr for ScreenRes {
     fn from_str(res: &str) -> Result<Self, Self::Err> {
         if let [h, w] = res
@@ -123,6 +110,18 @@ impl FromStr for ScreenRes {
 impl ToString for ScreenRes {
     fn to_string(&self) -> String {
         format!("{}x{}", self.0, self.1)
+    }
+}
+
+impl PartialOrd for ScreenRate {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ScreenRate {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
     }
 }
 

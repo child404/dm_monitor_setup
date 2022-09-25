@@ -25,7 +25,9 @@ impl DmenuCmd {
 
     pub fn exec(&self) -> String {
         if let Ok(output) = TermCmd::exec_with_output(&self.to_string()) {
+            // if self.prompt_options.is_empty() || self.prompt_options.contains(&output) {
             return output;
+            // }
         }
         // handle Esc or ^[ to quit the dmenu
         process::exit(0);
@@ -35,7 +37,7 @@ impl DmenuCmd {
 impl ToString for DmenuCmd {
     fn to_string(&self) -> String {
         format!(
-            "printf \"{}\" | {} {} -p \"{}\"",
+            "printf \"{}\" | {} {} \"{}\"",
             self.prompt_options.join("\n"),
             self.executable,
             self.args.join(" "),
@@ -49,8 +51,8 @@ impl DmenuDefaults {
         DmenuDefaults::exec_with_yes_no("Confirm? ")
     }
 
-    pub fn exec_inherit_layout() -> String {
-        DmenuDefaults::exec_with_yes_no("Inherit existing layout? ")
+    pub fn exec_is_inherit_layout() -> bool {
+        DmenuDefaults::exec_with_yes_no("Inherit existing layout? ") == "Yes"
     }
 
     fn exec_with_yes_no(prompt_message: &str) -> String {
@@ -70,7 +72,7 @@ impl DmenuDefaults {
     }
 
     pub fn exec_is_primary() -> bool {
-        DmenuDefaults::exec_with_yes_no("Is primary monitor? ") == "Yes"
+        DmenuDefaults::exec_with_yes_no("Is primary? ") == "Yes"
     }
 
     fn exec_with_skip(msg: &str, default_opts: Option<&[String]>) -> String {
@@ -94,6 +96,13 @@ impl DmenuDefaults {
             opts = [def_opts, &opts].concat();
         }
         DmenuCmd::new(&opts, msg.to_string()).exec();
+    }
+
+    pub fn exec_overwrite_layout(layout_name: &str) -> bool {
+        DmenuDefaults::exec_with_yes_no(&format!(
+            "Layout {} already exists! Overwrite? ",
+            layout_name
+        )) == "Yes"
     }
 
     pub fn exec_no_layouts_found() {

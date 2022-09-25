@@ -23,7 +23,7 @@ impl XrandrCmd {
                     })
                     .collect(),
             ),
-            Err(err) => None,
+            Err(_) => None,
         }
     }
 

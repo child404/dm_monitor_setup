@@ -29,7 +29,7 @@ impl Params {
     }
 
     pub fn dmenu_args() -> Vec<String> {
-        vec!["-c".to_string(), "-l 5".to_string(), "-bw 1".to_string()]
+        vec!["-l 5".to_string(), "-g 1".to_string(), "-p".to_string()]
     }
 
     pub fn daemon_sleep_time_millis() -> u64 {
@@ -44,5 +44,9 @@ impl Params {
             "Remove layout".to_string(),
             "Exit".to_string(),
         ]
+    }
+
+    pub fn path_to_current_layout() -> String {
+        String::from("/tmp/current_layout.toml")
     }
 }

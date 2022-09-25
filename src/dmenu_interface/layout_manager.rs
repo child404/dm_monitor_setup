@@ -2,46 +2,63 @@
 // TODO: create layout_manager.rs mod file instead of mod.rs file and put here pub mod layout_creator
 // and pub use layout_manager::layout_creator::LayoutCreator to be able to use crate::dmenu_interface::layout_manager::LayoutCreator
 use super::layout_creator::LayoutCreator;
-use crate::{
-    cmd::dmenu::DmenuDefaults,
-    monitor_layout::{MonitorLayout, MonitorLayouts},
-};
+use crate::{cmd::dmenu::DmenuDefaults, layouts_config::LayoutsConfig};
 
+#[derive(Default)]
 pub struct LayoutManager {
-    current_layout: MonitorLayout,
+    pub layouts_config: LayoutsConfig,
 }
 
 impl LayoutManager {
-    pub fn auto_detect_layout() {
+    pub fn user_layouts_names(&self) -> Vec<String> {
+        self.layouts_config.user_layouts.names()
+    }
+    pub fn auto_detect_layout(&self) {
         unimplemented!();
     }
 
-    pub fn create_new_layout(user_layouts: &MonitorLayouts) {
+    pub fn create_new_layout(&mut self) {
         let mut layout_creator = LayoutCreator::default();
-        layout_creator.create_layout();
+        layout_creator.create_layout(&self.layouts_config.user_layouts);
+        if !layout_creator.is_empty() {
+            self.layouts_config
+                .add_or_overwrite_if_exists(&layout_creator.final_layout);
+        }
     }
 
-    pub fn disconnect_all_monitors() {
-        unimplemented!();
+    pub fn disconnect_all_monitors(&mut self) {
+        // here the CurrentLayout is needed
+        // also, need to recognize an in-build monitor of the setup
+        // alternatively, it's needed to keep only primary monitor enabled
+        if self.layouts_config.current_layout.monitors.is_empty() {
+            unimplemented!();
+        }
     }
 
-    pub fn remove_layout(user_layouts: &mut MonitorLayouts) {
-        if user_layouts.is_empty() {
+    pub fn remove_layout(&mut self) {
+        if self.layouts_config.user_layouts.is_empty() {
             return DmenuDefaults::exec_no_layouts_found();
         }
-        let layout_name = DmenuDefaults::exec_layout_to_remove(&user_layouts.names());
-        match user_layouts.find_layout(&layout_name) {
-            Ok(pos) if DmenuDefaults::confirmed() => user_layouts.remove_layout(pos),
+        let layout_name =
+            DmenuDefaults::exec_layout_to_remove(&self.layouts_config.user_layouts.names());
+        match self
+            .layouts_config
+            .user_layouts
+            .find_layout_pos(&layout_name)
+        {
+            Ok(pos) if DmenuDefaults::confirmed() => {
+                self.layouts_config.user_layouts.remove_layout(pos)
+            }
+            Ok(_) => {} // skip if not confirmed
             Err(err) => DmenuDefaults::exec_err(err, &layout_name),
-            _ => {}
         };
     }
 
-    pub fn apply_layout(user_layouts: &MonitorLayouts, layout_name: &str) {
-        match user_layouts.get_layout_by(layout_name) {
+    pub fn apply_layout(&self, layout_name: &str) {
+        match self.layouts_config.user_layouts.get_layout_by(layout_name) {
             Ok(layout) if DmenuDefaults::confirmed() => layout.apply(),
+            Ok(_) => {} // skip if not confirmed
             Err(err) => DmenuDefaults::exec_err(err, layout_name),
-            _ => {}
         };
     }
 }

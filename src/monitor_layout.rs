@@ -21,7 +21,7 @@ pub struct MonitorLayout {
 
 // TODO: add ScreenOptions to the monitor to be able to change res/rate on the fly:
 //      new options: Change current res, Change current rate
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct Monitor {
     pub name: String,
     pub res: ScreenRes,
@@ -46,7 +46,7 @@ pub struct MonitorDuplicated {
 }
 
 impl MonitorPosition {
-    pub fn related(related_pos: &str, related_name: &str) -> Self {
+    pub fn new(related_pos: &str, related_name: &str) -> Self {
         Self {
             is_related: true,
             related_pos: related_pos.to_string(),
@@ -56,7 +56,7 @@ impl MonitorPosition {
 }
 
 impl MonitorDuplicated {
-    pub fn duplicated(name: &str) -> Self {
+    pub fn new(name: &str) -> Self {
         Self {
             is_duplicated: true,
             name: name.to_string(),
@@ -87,19 +87,20 @@ impl MonitorLayouts {
             .collect::<Vec<String>>()
     }
 
-    pub fn find_layout(&self, name: &str) -> Result<usize, LayoutError> {
+    pub fn find_layout_pos(&self, name: &str) -> Result<usize, LayoutError> {
         if let Some(pos) = self
             .layouts
             .iter()
             .position(|layout| layout.name.as_str() == name)
         {
-            return Ok(pos);
+            Ok(pos)
+        } else {
+            Err(LayoutError::LayoutNotFound)
         }
-        Err(LayoutError::LayoutNotFound)
     }
 
     pub fn get_layout_by(&self, name: &str) -> Result<MonitorLayout, LayoutError> {
-        match self.find_layout(name) {
+        match self.find_layout_pos(name) {
             Ok(pos) => Ok(self.layouts[pos].clone()),
             Err(err) => Err(err),
         }
@@ -126,6 +127,14 @@ impl MonitorLayout {
             .iter()
             .map(|monitor_setup| monitor_setup.name.clone())
             .collect::<Vec<String>>()
+    }
+
+    pub fn current() -> Self {
+        let content = LayoutsConfig::read_current_layout();
+        if content.is_empty() {
+            return Self::default();
+        }
+        toml::from_str(&content).expect("Correct current_layout.toml structure")
     }
 }
 
@@ -188,11 +197,9 @@ fn test_monitor_setup() {
         name: "Single monitor".to_string(),
         monitors: vec![monitor],
     };
-    let layouts = MonitorLayouts {
-        layouts: vec![monitor_setup],
-    };
     println!("{:#?}", MonitorLayouts::from_config());
-    println!("{:#?}", layouts);
+    println!("{:#?}", &monitor_setup);
+    let mut layouts_cfg = LayoutsConfig::default();
 
-    LayoutsConfig::add(layouts);
+    layouts_cfg.add_or_overwrite_if_exists(&monitor_setup);
 }

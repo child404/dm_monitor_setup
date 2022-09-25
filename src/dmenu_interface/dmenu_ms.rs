@@ -1,10 +1,8 @@
-#![allow(dead_code)]
 use std::process::exit;
 use std::{thread, time};
 
 use super::layout_manager::LayoutManager;
 use crate::cmd::dmenu::DmenuDefaults;
-use crate::monitor_layout::MonitorLayouts;
 use crate::params::Params;
 
 pub fn run_daemon() {
@@ -17,14 +15,16 @@ pub fn run_daemon() {
 
 pub fn launch_ms() {
     // TODO: add current layout and add layout_name (Current) or ✓
-    let mut user_layouts = MonitorLayouts::from_config();
-    match DmenuDefaults::exec_start(&user_layouts.names()).as_str() {
-        "Auto-detect" => LayoutManager::auto_detect_layout(),
-        "Disconnect all" => LayoutManager::disconnect_all_monitors(),
-        "Create new layout" => LayoutManager::create_new_layout(&user_layouts),
-        "Remove layout" => LayoutManager::remove_layout(&mut user_layouts),
+    // FIXME: LayoutManager wraps LayoutsConfig, LayoutsConfig wraps MonitorLayouts from .toml file
+    //        implement remove_layout, etc. in LayoutsConfig
+    let mut layout_manager = LayoutManager::default();
+    match DmenuDefaults::exec_start(&layout_manager.user_layouts_names()).as_str() {
+        "Auto-detect" => layout_manager.auto_detect_layout(),
+        "Disconnect all" => layout_manager.disconnect_all_monitors(),
+        "Create new layout" => layout_manager.create_new_layout(),
+        "Remove layout" => layout_manager.remove_layout(),
         "Exit" => exit(0),
-        layout_name => LayoutManager::apply_layout(&user_layouts, layout_name),
+        layout_name => layout_manager.apply_layout(layout_name),
     }
     launch_ms()
 }
