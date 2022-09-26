@@ -1,28 +1,27 @@
-use crate::cmd::term::TermCmd;
-use crate::custom_errors::LayoutError;
-use crate::params::Params;
+use super::term::TermCMD;
+use crate::defaults;
 use std::process;
 use std::str;
 
-pub struct DmenuCMD {
-    pub executable: String,
-    pub args: Vec<String>,
-    pub prompt_options: Vec<String>,
-    pub prompt_message: String,
+pub struct DmenuCMD<'a> {
+    pub executable: &'a str,
+    pub args: &'a [&'a str],
+    pub prompt_options: &'a [&'a str],
+    pub prompt_message: &'a str,
 }
 
-impl DmenuCMD {
-    pub fn new(prompt_options: &[String], prompt_message: String) -> Self {
-        DmenuCmd {
-            executable: Params::dmenu_executable(),
-            args: Params::dmenu_args(),
-            prompt_options: prompt_options.to_vec(),
+impl<'a> DmenuCMD<'a> {
+    pub fn new(prompt_options: &'a [&'a str], prompt_message: &'a str) -> Self {
+        Self {
+            executable: defaults::DMENU_BINARY,
+            args: &defaults::DMENU_ARGS,
+            prompt_options,
             prompt_message,
         }
     }
 
     pub fn exec(&self) -> String {
-        if let Ok(output) = TermCmd::exec_with_output(&self.to_string()) {
+        if let Ok(output) = TermCMD::exec_with_output(&self.to_string()) {
             // if self.prompt_options.is_empty() || self.prompt_options.contains(&output) {
             return output;
             // }
@@ -32,7 +31,7 @@ impl DmenuCMD {
     }
 }
 
-impl ToString for DmenuCMD {
+impl ToString for DmenuCMD<'_> {
     fn to_string(&self) -> String {
         format!(
             "printf \"{}\" | {} {} \"{}\"",

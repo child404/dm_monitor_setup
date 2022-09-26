@@ -2,11 +2,11 @@
 // TODO: create layout_manager.rs mod file instead of mod.rs file and put here pub mod layout_creator
 // and pub use layout_manager::layout_creator::LayoutCreator to be able to use crate::dmenu_interface::layout_manager::LayoutCreator
 use super::layout_creator::LayoutCreator;
-use crate::{cmd::dmenu::DmenuDefaults, layouts_config::LayoutsConfig};
+use crate::{core::utils::layout_config::LayoutConfig, ui::dmenu_ui::DmenuUI};
 
 #[derive(Default)]
 pub struct LayoutManager {
-    pub layouts_config: LayoutsConfig,
+    pub layouts_config: LayoutConfig,
 }
 
 impl LayoutManager {
@@ -37,28 +37,25 @@ impl LayoutManager {
 
     pub fn remove_layout(&mut self) {
         if self.layouts_config.user_layouts.is_empty() {
-            return DmenuDefaults::exec_no_layouts_found();
+            return DmenuUI::exec_no_layouts_found();
         }
-        let layout_name =
-            DmenuDefaults::exec_layout_to_remove(&self.layouts_config.user_layouts.names());
+        let layout_name = DmenuUI::exec_layout_to_remove(&self.layouts_config.user_layouts.names());
         match self
             .layouts_config
             .user_layouts
             .find_layout_pos(&layout_name)
         {
-            Ok(pos) if DmenuDefaults::confirmed() => {
-                self.layouts_config.user_layouts.remove_layout(pos)
-            }
+            Ok(pos) if DmenuUI::confirmed() => self.layouts_config.user_layouts.remove_layout(pos),
             Ok(_) => {} // skip if not confirmed
-            Err(err) => DmenuDefaults::exec_err(err, &layout_name),
+            Err(err) => DmenuUI::exec_err(err, &layout_name),
         };
     }
 
     pub fn apply_layout(&self, layout_name: &str) {
         match self.layouts_config.user_layouts.get_layout_by(layout_name) {
-            Ok(layout) if DmenuDefaults::confirmed() => layout.apply(),
+            Ok(layout) if DmenuUI::confirmed() => layout.apply(),
             Ok(_) => {} // skip if not confirmed
-            Err(err) => DmenuDefaults::exec_err(err, layout_name),
+            Err(err) => DmenuUI::exec_err(err, layout_name),
         };
     }
 }

@@ -1,10 +1,15 @@
+use serde_derive::{Deserialize, Serialize};
+use std::{fmt::Write, str};
+
+use super::monitor_options::{MonitorRate, MonitorRes};
+
 // TODO: add ScreenOptions to the monitor to be able to change res/rate on the fly:
 //      new options: Change current res, Change current rate
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct Monitor {
     pub name: String,
-    pub res: ScreenRes,
-    pub rate: ScreenRate,
+    pub res: MonitorRes,
+    pub rate: MonitorRate,
     pub is_primary: bool,
     pub is_auto: bool,
     pub pos: MonitorPosition,

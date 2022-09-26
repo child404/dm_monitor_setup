@@ -1,12 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
-use std::{fmt::Write, str};
 
-use crate::{
-    cmd::{term::TermCmd, xrandr::XrandrCmd},
-    custom_errors::LayoutError,
-    layouts_config::LayoutsConfig,
-    screen_opts::{ScreenRate, ScreenRes},
-};
+use super::{layout_config::LayoutConfig, layout_error::LayoutError, monitor::Monitor};
+use crate::core::handlers::{term::TermCMD, xrandr::XrandrCMD};
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct MonitorLayouts {
@@ -21,7 +16,7 @@ pub struct MonitorLayout {
 
 impl MonitorLayouts {
     pub fn from_config() -> Self {
-        let content = LayoutsConfig::read();
+        let content = LayoutConfig::read();
         if content.is_empty() {
             return Self::default();
         }
@@ -63,7 +58,7 @@ impl MonitorLayouts {
 
     pub fn remove_layout(&mut self, pos: usize) {
         self.layouts.remove(pos);
-        LayoutsConfig::overwrite_with(self);
+        LayoutConfig::overwrite_with(self);
     }
 
     pub fn is_empty(&self) -> bool {
@@ -74,7 +69,7 @@ impl MonitorLayouts {
 impl MonitorLayout {
     pub fn apply(&self) {
         // TODO: send here current layout to daemon or save to file
-        TermCmd::exec(&XrandrCmd::from_monitor_layout(self));
+        TermCMD::exec(&XrandrCMD::from_monitor_layout(self));
     }
 
     pub fn monitor_names(&self) -> Vec<String> {
@@ -85,7 +80,7 @@ impl MonitorLayout {
     }
 
     pub fn current() -> Self {
-        let content = LayoutsConfig::read_current_layout();
+        let content = LayoutConfig::read_current_layout();
         if content.is_empty() {
             return Self::default();
         }
@@ -127,7 +122,7 @@ fn test_monitor_setup() {
     };
     println!("{:#?}", MonitorLayouts::from_config());
     println!("{:#?}", &monitor_setup);
-    let mut layouts_cfg = LayoutsConfig::default();
+    let mut layouts_cfg = LayoutConfig::default();
 
     layouts_cfg.add_or_overwrite_if_exists(&monitor_setup);
 }

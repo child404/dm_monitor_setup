@@ -1,7 +1,10 @@
 use regex::Regex;
 use std::collections::HashMap;
 
-use crate::{cmd::term::TermCmd, monitor_layout::MonitorLayout, screen_opts::ScreenOptions};
+use crate::core::{
+    handlers::term::TermCMD,
+    utils::{monitor_layout::MonitorLayout, monitor_options::MonitorOptions},
+};
 
 pub struct XrandrCMD;
 
@@ -11,7 +14,7 @@ impl XrandrCMD {
     }
 
     pub fn get_list_of_monitors() -> Option<Vec<String>> {
-        match TermCmd::exec_with_output("xrandr | grep \" connected\"") {
+        match TermCMD::exec_with_output("xrandr | grep \" connected\"") {
             Ok(output) => Some(
                 output
                     .split('\n')
@@ -28,11 +31,11 @@ impl XrandrCMD {
     }
 
     fn _get_display_options() -> Option<String> {
-        TermCmd::exec_with_output(
+        TermCMD::exec_with_output(
             "xrandr | grep -Ev \"disconnected|Screen\" | awk '{print $1, $2}' | awk -F'[/+* ]' '{print $1\" \"$2}'").ok()
     }
 
-    pub fn get_display_options() -> Option<HashMap<String, ScreenOptions>> {
+    pub fn get_display_options() -> Option<HashMap<String, MonitorOptions>> {
         let screens_regexp =
             Regex::new(r"(.+) connected\n(?:[\da-zA-Z]+x[\da-zA-Z]+ [\da-zA-Z]+\.[\da-zA-Z]+\n)+")
                 .unwrap();

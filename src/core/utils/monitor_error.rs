@@ -10,8 +10,8 @@ pub enum MonitorError {
 impl fmt::Display for MonitorError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ScreenError::InvalidScreenResolution => f.write_str("InvalidResolution"),
-            ScreenError::InvalidScreenRate => f.write_str("InvalidScreenRate"),
+            MonitorError::InvalidMonitorResolution => f.write_str("InvalidResolution"),
+            MonitorError::InvalidMonitorRate => f.write_str("InvalidScreenRate"),
         }
     }
 }
@@ -19,8 +19,8 @@ impl fmt::Display for MonitorError {
 impl StdError for MonitorError {
     fn description(&self) -> &str {
         match *self {
-            ScreenError::InvalidScreenResolution => "Invalid Resolution",
-            ScreenError::InvalidScreenRate => "Invalid Screen Rate",
+            MonitorError::InvalidMonitorResolution => "Invalid Resolution",
+            MonitorError::InvalidMonitorRate => "Invalid Screen Rate",
         }
     }
 }

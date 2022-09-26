@@ -8,19 +8,19 @@ use std::{
     str::{self, FromStr},
 };
 
-use crate::custom_errors::ScreenError;
+use super::monitor_error::MonitorError;
 
 #[derive(Debug, Default, Clone)]
-pub struct ScreenOptions {
-    pub resolutions: Vec<ScreenRes>,
-    pub rates: Vec<ScreenRate>,
+pub struct MonitorOptions {
+    pub resolutions: Vec<MonitorRes>,
+    pub rates: Vec<MonitorRate>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, Copy, Default)]
-pub struct ScreenRes(pub u16, pub u16);
+pub struct MonitorRes(pub u16, pub u16);
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, Copy, Default)]
-pub struct ScreenRate(pub u16);
+pub struct MonitorRate(pub u16);
 
 fn filter_unique<T: Hash + Ord + Copy>(v: &mut [T]) -> Vec<T> {
     v.sort_by(|a, b| b.cmp(a));
@@ -31,7 +31,7 @@ fn map_str<T: ToString>(t: &[T]) -> Vec<String> {
     t.iter().map(T::to_string).collect()
 }
 
-impl ScreenOptions {
+impl MonitorOptions {
     pub fn is_empty(&self) -> bool {
         self.resolutions.is_empty() || self.rates.is_empty()
     }
@@ -49,13 +49,13 @@ impl ScreenOptions {
         self.rates = filter_unique(&mut self.rates);
     }
 
-    fn add(&mut self, res: ScreenRes, rate: ScreenRate) {
+    fn add(&mut self, res: MonitorRes, rate: MonitorRate) {
         self.resolutions.push(res);
         self.rates.push(rate);
     }
 }
 
-impl FromStr for ScreenOptions {
+impl FromStr for MonitorOptions {
     fn from_str(screen_settings: &str) -> Result<Self, Self::Err> {
         let mut screen_opts = Self::default();
         for setting in Regex::new(r"(\d+x\d+) (\d+\.\d+)\n")
@@ -71,16 +71,16 @@ impl FromStr for ScreenOptions {
         Ok(screen_opts)
     }
 
-    type Err = ScreenError;
+    type Err = MonitorError;
 }
 
-impl PartialOrd for ScreenRes {
+impl PartialOrd for MonitorRes {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for ScreenRes {
+impl Ord for MonitorRes {
     fn cmp(&self, other: &Self) -> Ordering {
         if self.0 != other.0 {
             self.0.cmp(&other.0)
@@ -90,7 +90,7 @@ impl Ord for ScreenRes {
     }
 }
 
-impl FromStr for ScreenRes {
+impl FromStr for MonitorRes {
     fn from_str(res: &str) -> Result<Self, Self::Err> {
         if let [h, w] = res
             .split('x')
@@ -100,44 +100,44 @@ impl FromStr for ScreenRes {
         {
             Ok(Self(h, w))
         } else {
-            Err(Self::Err::InvalidScreenResolution)
+            Err(Self::Err::InvalidMonitorResolution)
         }
     }
 
-    type Err = ScreenError;
+    type Err = MonitorError;
 }
 
-impl ToString for ScreenRes {
+impl ToString for MonitorRes {
     fn to_string(&self) -> String {
         format!("{}x{}", self.0, self.1)
     }
 }
 
-impl PartialOrd for ScreenRate {
+impl PartialOrd for MonitorRate {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for ScreenRate {
+impl Ord for MonitorRate {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
     }
 }
 
-impl FromStr for ScreenRate {
+impl FromStr for MonitorRate {
     fn from_str(rate: &str) -> Result<Self, Self::Err> {
         if let Ok(rate) = rate.parse::<f64>() {
             Ok(Self(rate.round() as u16))
         } else {
-            Err(Self::Err::InvalidScreenRate)
+            Err(Self::Err::InvalidMonitorRate)
         }
     }
 
-    type Err = ScreenError;
+    type Err = MonitorError;
 }
 
-impl ToString for ScreenRate {
+impl ToString for MonitorRate {
     fn to_string(&self) -> String {
         format!("{:.1}", self.0)
     }
