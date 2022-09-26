@@ -1,4 +1,3 @@
-// TODO: rewrite modules use the latest replacement for mod.rs
 // NOTE: the structure would be:
 //  - '--daemon' - runs daemon
 //  - '--help' - spawns help (usage)
