@@ -15,48 +15,46 @@
 // dmenu_ms:
 //      main;
 //      core:
-//          daemon;
-//          layout_tools:
+//          daemon - runs with the flag `--daemon` (`-d`),
+//                   constantly parses xrandr command's output to store screen opts/other settings,
+//                   and every ~2 seconds checks whether there's a new monitor connected;
+//          utils - different utils for monitor/layouts:
 //              monitor;
 //              monitor_layout;
 //              layout_config;
-//              screen_options;
-//              layout_errors;
-//          layout_manager:
+//              monitor_options (previously - screen_options);
+//              layout_error (errors for MonitorLayout);
+//              monitor_error (errors for monitor/screen);
+//          ms_launcher - runs with no flags:
+//              layout_manager - manages create, remove, auto-detect layout, etc.;
 //              layout_creator;
 //              layout_detector;
-//          tools:
-//              term: TermCMD;
-//              xrandr: XrandrCMD;
+//          handlers - the handlers for terminal, xrandr and dmenu commands:
+//              term (or term_handler): TermCMD;
+//              xrandr (or xrandr_handler): XrandrCMD;
+//              dmenu (or dmenu_handler): DmenuCMD;
 //              term_error: from custom_errors;
 //              xrandr_error: from custom errors;
-//          dmenu:
-//              ui: includes dmenu_cmd::Defaults, but ui::DmenuUI;
-//              cmd: DmenuCMD;
 //              dmenu_error;
-//      help;
-//      params;
+//      ui - includes dmenu_cmd::Defaults, but ui::DmenuUI (maybe, different files for different modules);
+//      help - help function(s) that run with `--help` (`-h`) flag;
+//      defaults (or other name) - const params (rewrite it as consts);
 
-use crate::core::daemon::MSDaemon;
-use crate::dmenu_interface::dmenu_ms::{launch_ms, spawn_help};
-
-pub mod cmd;
 pub mod core;
-pub mod custom_errors;
-pub mod dmenu_interface;
-pub mod layouts_config;
-pub mod monitor_layout;
-pub mod params;
-pub mod screen_opts;
+pub mod defaults;
+pub mod help;
+pub mod ui;
+
+use crate::core::{daemon::MSDaemon, ms_launcher};
 use std::env;
 
 fn main() {
     match env::args().nth(1) {
         Some(arg) => match arg.as_str() {
             "--daemon" | "-d" => MSDaemon::start(),
-            "--help" | "-h" => spawn_help(),
+            "--help" | "-h" => help::help(),
             _ => println!("Undefined arg: {arg}"),
         },
-        None => launch_ms(),
+        None => ms_launcher::launch(),
     }
 }

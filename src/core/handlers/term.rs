@@ -1,10 +1,10 @@
-use crate::custom_errors::TermOutputError;
+use super::term_error::TermOutputError;
 use std::process::{Command, Stdio};
 use std::str;
 
-pub struct TermCmd;
+pub struct TermCMD;
 
-impl TermCmd {
+impl TermCMD {
     pub fn exec(cmd: &str) {
         let mut child = Command::new("bash")
             .arg("-c")

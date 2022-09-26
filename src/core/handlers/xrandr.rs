@@ -3,9 +3,9 @@ use std::collections::HashMap;
 
 use crate::{cmd::term::TermCmd, monitor_layout::MonitorLayout, screen_opts::ScreenOptions};
 
-pub struct XrandrCmd;
+pub struct XrandrCMD;
 
-impl XrandrCmd {
+impl XrandrCMD {
     pub fn from_monitor_layout(layout: &MonitorLayout) -> String {
         format!("xrandr {}", layout.to_string())
     }
