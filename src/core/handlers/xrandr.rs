@@ -2,49 +2,56 @@ use regex::Regex;
 use std::collections::HashMap;
 
 use crate::core::{
-    handlers::term::TermCMD,
-    utils::{monitor_layout::MonitorLayout, monitor_options::MonitorOptions},
+    handlers::command_line as cmd,
+    utils::{monitor_layout::Layout, monitor_options::MonitorOptions},
 };
 
-pub struct XrandrCMD;
+type DisplayToOptions = HashMap<String, MonitorOptions>;
 
-impl XrandrCMD {
-    pub fn from_monitor_layout(layout: &MonitorLayout) -> String {
+pub struct Xrandr;
+
+// TODO: change XrandrCMD to be similar to DmenuCMD
+impl Xrandr {
+    pub fn from_monitor_layout(layout: &Layout) -> String {
         format!("xrandr {}", layout.to_string())
     }
 
+    fn parse_output_line(line: &str) -> Option<String> {
+        line.split_whitespace().take(1).next().map(str::to_string)
+    }
+
     pub fn get_list_of_monitors() -> Option<Vec<String>> {
-        match TermCMD::exec_with_output("xrandr | grep \" connected\"") {
-            Ok(output) => Some(
-                output
-                    .split('\n')
-                    .flat_map(|line| {
-                        line.split_whitespace()
-                            .take(1)
-                            .next()
-                            .map(|screen| screen.to_string())
-                    })
-                    .collect(),
-            ),
-            Err(_) => None,
-        }
+        Some(
+            cmd::run_and_fetch_output("xrandr | grep \" connected\"")
+                .unwrap_or_else(|error| match error {
+                    cmd::Error::EmptyOutput => unimplemented!(),
+                    cmd::Error::Io(error) => unimplemented!(),
+                })
+                .split('\n')
+                .flat_map(Self::parse_output_line)
+                .collect(),
+        )
     }
 
-    fn _get_display_options() -> Option<String> {
-        TermCMD::exec_with_output(
-            "xrandr | grep -Ev \"disconnected|Screen\" | awk '{print $1, $2}' | awk -F'[/+* ]' '{print $1\" \"$2}'").ok()
-    }
-
-    pub fn get_display_options() -> Option<HashMap<String, MonitorOptions>> {
+    pub fn get_display_modes() -> DisplayToOptions {
         let screens_regexp =
             Regex::new(r"(.+) connected\n(?:[\da-zA-Z]+x[\da-zA-Z]+ [\da-zA-Z]+\.[\da-zA-Z]+\n)+")
-                .unwrap();
-        Self::_get_display_options().map(|opts| {
-            HashMap::from_iter(
-                screens_regexp
-                    .captures_iter(&opts)
-                    .map(|screen| (screen[1].to_string(), screen[0].parse().ok().unwrap())),
+                .expect("hardcoded regexp");
+        let opts = cmd::run_and_fetch_output(
+            "xrandr | grep -Ev \"disconnected|Screen\" | awk '{print $1, $2}' | awk -F'[/+* ]' '{print $1\" \"$2}'"
+        ).unwrap_or_else(|error| {
+           match error {
+               cmd::Error::EmptyOutput => unimplemented!(),
+               cmd::Error::Io(error) => unimplemented!(),
+           }
+        });
+        HashMap::from_iter(screens_regexp.captures_iter(&opts).map(|dp| {
+            (
+                dp[1].to_string(),
+                dp[0]
+                    .parse()
+                    .expect("correct display options as it already matched regexp"),
             )
-        })
+        }))
     }
 }

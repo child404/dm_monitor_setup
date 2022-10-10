@@ -8,25 +8,29 @@ use std::{
     str::{self, FromStr},
 };
 
-use super::monitor_error::MonitorError;
+use super::monitor_error::XrandrError;
 
 #[derive(Debug, Default, Clone)]
 pub struct MonitorOptions {
-    pub resolutions: Vec<MonitorRes>,
-    pub rates: Vec<MonitorRate>,
+    pub resolutions: Vec<Resolution>,
+    pub rates: Vec<RefreshRate>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, Copy, Default)]
-pub struct MonitorRes(pub u16, pub u16);
+pub struct Resolution(pub u16, pub u16);
 
 #[derive(Debug, Deserialize, Serialize, Clone, Hash, PartialEq, Eq, Copy, Default)]
-pub struct MonitorRate(pub u16);
+pub struct RefreshRate(pub u16);
 
-fn filter_unique<T: Hash + Ord + Copy>(v: &mut [T]) -> Vec<T> {
+fn filter_unique<T>(v: &mut [T]) -> Vec<T>
+where
+    T: Hash + Ord + Copy,
+{
     v.sort_by(|a, b| b.cmp(a));
     v.iter().unique().take(10).copied().collect()
 }
 
+// TODO: impl such method for Vec
 fn map_str<T: ToString>(t: &[T]) -> Vec<String> {
     t.iter().map(T::to_string).collect()
 }
@@ -49,7 +53,7 @@ impl MonitorOptions {
         self.rates = filter_unique(&mut self.rates);
     }
 
-    fn add(&mut self, res: MonitorRes, rate: MonitorRate) {
+    fn add(&mut self, res: Resolution, rate: RefreshRate) {
         self.resolutions.push(res);
         self.rates.push(rate);
     }
@@ -71,16 +75,16 @@ impl FromStr for MonitorOptions {
         Ok(screen_opts)
     }
 
-    type Err = MonitorError;
+    type Err = XrandrError;
 }
 
-impl PartialOrd for MonitorRes {
+impl PartialOrd for Resolution {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for MonitorRes {
+impl Ord for Resolution {
     fn cmp(&self, other: &Self) -> Ordering {
         if self.0 != other.0 {
             self.0.cmp(&other.0)
@@ -90,7 +94,7 @@ impl Ord for MonitorRes {
     }
 }
 
-impl FromStr for MonitorRes {
+impl FromStr for Resolution {
     fn from_str(res: &str) -> Result<Self, Self::Err> {
         if let [h, w] = res
             .split('x')
@@ -100,44 +104,44 @@ impl FromStr for MonitorRes {
         {
             Ok(Self(h, w))
         } else {
-            Err(Self::Err::InvalidMonitorResolution)
+            Err(Self::Err::InvalidResolution)
         }
     }
 
-    type Err = MonitorError;
+    type Err = XrandrError;
 }
 
-impl ToString for MonitorRes {
+impl ToString for Resolution {
     fn to_string(&self) -> String {
         format!("{}x{}", self.0, self.1)
     }
 }
 
-impl PartialOrd for MonitorRate {
+impl PartialOrd for RefreshRate {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for MonitorRate {
+impl Ord for RefreshRate {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
     }
 }
 
-impl FromStr for MonitorRate {
+impl FromStr for RefreshRate {
     fn from_str(rate: &str) -> Result<Self, Self::Err> {
         if let Ok(rate) = rate.parse::<f64>() {
             Ok(Self(rate.round() as u16))
         } else {
-            Err(Self::Err::InvalidMonitorRate)
+            Err(Self::Err::InvalidRate)
         }
     }
 
-    type Err = MonitorError;
+    type Err = XrandrError;
 }
 
-impl ToString for MonitorRate {
+impl ToString for RefreshRate {
     fn to_string(&self) -> String {
         format!("{:.1}", self.0)
     }

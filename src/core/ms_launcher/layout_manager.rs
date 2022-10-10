@@ -30,7 +30,7 @@ impl LayoutManager {
         // here the CurrentLayout is needed
         // also, need to recognize an in-build monitor of the setup
         // alternatively, it's needed to keep only primary monitor enabled
-        if self.layouts_config.current_layout.monitors.is_empty() {
+        if self.layouts_config.current_layout.outputs.is_empty() {
             unimplemented!();
         }
     }

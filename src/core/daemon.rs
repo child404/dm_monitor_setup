@@ -1,4 +1,4 @@
-use crate::{core::handlers::xrandr::XrandrCMD, defaults};
+use crate::{core::handlers::xrandr::Xrandr, defaults};
 use std::{thread, time};
 
 pub struct MSDaemon;
@@ -13,7 +13,7 @@ impl MSDaemon {
     }
 
     fn detect_connected_monitors() {
-        if let Some(opts) = XrandrCMD::get_display_options() {
+        if let Some(opts) = Xrandr::get_display_modes() {
             let monitor_opts = opts;
         }
     }

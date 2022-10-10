@@ -1,8 +1,8 @@
 use crate::core::{
     handlers::{dmenu::DmenuCMD, xrandr::XrandrCMD},
     utils::{
-        monitor::{Monitor, MonitorPosition},
-        monitor_layout::{MonitorLayout, MonitorLayouts},
+        monitor::{Output, Position},
+        monitor_layout::{Layout, Layouts},
         monitor_options::MonitorOptions,
     },
 };
@@ -13,37 +13,36 @@ pub struct LayoutCreator {
     _is_primary_selected: bool,
     _selected_opts: MonitorOptions,
     _conn_opt: String,
-    _current_monitor: Monitor,
-    pub final_layout: MonitorLayout,
+    _current_monitor: Output,
+    pub final_layout: Layout,
 }
 
 impl LayoutCreator {
     pub fn is_empty(&self) -> bool {
-        self.final_layout.monitors.is_empty()
+        self.final_layout.outputs.is_empty()
     }
+
     fn _read_res(&mut self) {
-        if let Ok(screen_res) = DmenuCMD::new(
-            &self._selected_opts.resolutions(),
+        if let Ok(monitor_res) = DmenuCMD::new(
+            self._selected_opts.resolutions(),
             &format!("Which resolution for {}? ", self._current_monitor.name),
         )
         .exec()
-        .parse()
         {
-            self._current_monitor.res = screen_res;
+            self._current_monitor.resolution = monitor_res.parse().ok().unwrap();
         } else {
             self._read_res();
         }
     }
 
     fn _read_rate(&mut self) {
-        if let Ok(rate) = DmenuCMD::new(
-            &self._selected_opts.rates(),
+        if let Ok(monitor_rate) = DmenuCMD::new(
+            self._selected_opts.rates(),
             &format!("Which rate for {}? ", self._current_monitor.name),
         )
         .exec()
-        .parse()
         {
-            self._current_monitor.rate = rate;
+            self._current_monitor.rate = monitor_rate.parse().ok().unwrap();
         } else {
             self._read_rate();
         }
@@ -55,49 +54,48 @@ impl LayoutCreator {
     }
 
     fn _read_conn_opt(&mut self) {
-        let conn_opts = ["Connect", "Duplicate"];
-        match DmenuCMD::new(&conn_opts, "Connect or duplicate monitor? ").exec() {
-            conn_opt if conn_opts.contains(conn_opt) => {
+        match DmenuCMD::new(&["Connect", "Duplicate"], "Connect or duplicate monitor? ").exec() {
+            Ok(conn_opt) => {
                 self._conn_opt = conn_opt;
             }
-            _ => self._read_conn_opt(),
+            Err(_) => self._read_conn_opt(),
         }
     }
 
     fn _read_monitor_name(&mut self, monitor_names: &[&str]) {
         match DmenuCMD::new(
             monitor_names,
-            &format!(
-                "Which monitor to add ({})? ",
-                &self._conn_opt.to_lowercase()
-            ),
+            &format!("Which monitor to add ({})? ", self._conn_opt.to_lowercase()),
         )
         .exec()
         {
-            monitor_name if monitor_names.contains(&monitor_name) => {
+            Ok(monitor_name) => {
                 self._current_monitor.name = monitor_name;
             }
-            _ => self._read_monitor_name(monitor_names),
+            Err(_) => self._read_monitor_name(monitor_names),
         }
     }
 
     fn _read_monitor_pos(&mut self) {
-        if self.final_layout.monitors.is_empty() {
+        if self.final_layout.outputs.is_empty() {
             return;
         }
-        // TODO: add here check for incorrect pos or monitor name
         match DmenuUI::exec_position(&self._current_monitor.name).as_str() {
             "Skip" => {}
             pos => {
-                let related_monitor = DmenuCMD::new(
+                if let Ok(rel_monitor) = DmenuCMD::new(
                     &self.final_layout.monitor_names(),
                     &format!(
                         "Place {} {} which monitor? ",
-                        &self._current_monitor.name, &pos
+                        self._current_monitor.name, pos
                     ),
                 )
-                .exec();
-                self._current_monitor.pos = MonitorPosition::new(pos, &related_monitor);
+                .exec()
+                {
+                    self._current_monitor.position = Position::new(pos, rel_monitor);
+                } else {
+                    self._read_monitor_pos();
+                }
             }
         };
     }
@@ -109,12 +107,11 @@ impl LayoutCreator {
         }
     }
 
-    fn _read_layout_name(&mut self, user_layouts: &MonitorLayouts) {
-        self.final_layout.name = DmenuCMD::new(
-            &user_layouts.names(),
-            String::from("Choose the name for your layout: "),
-        )
-        .exec();
+    fn _read_layout_name(&mut self, user_layouts: &Layouts) {
+        self.final_layout.name = DmenuCMD::new(&[], "Choose the name for your layout: ")
+            .exec()
+            .ok()
+            .unwrap();
         if user_layouts.find_layout_pos(&self.final_layout.name).ok() != None
             && !DmenuUI::exec_overwrite_layout(&self.final_layout.name)
         {
@@ -122,7 +119,7 @@ impl LayoutCreator {
         }
     }
 
-    pub fn create_layout(&mut self, user_layouts: &MonitorLayouts) {
+    pub fn create_layout(&mut self, user_layouts: &Layouts) {
         if DmenuUI::exec_is_inherit_layout() {
             unimplemented!();
         }
@@ -142,7 +139,7 @@ impl LayoutCreator {
             screen_to_opts.remove(&self._current_monitor.name);
             self._current_monitor.is_auto = true;
             self.final_layout
-                .monitors
+                .outputs
                 .push(self._current_monitor.clone());
 
             if screen_to_opts.is_empty() || !DmenuUI::exec_continue() {
